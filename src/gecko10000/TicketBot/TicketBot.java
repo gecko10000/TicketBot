@@ -12,7 +12,7 @@ public class TicketBot {
 
     public TicketBot() {
         new Config();
-        GatewayDiscordClient client = DiscordClient.create(Config.getProperty("botToken")).login().block();
+        GatewayDiscordClient client = DiscordClient.create(Config.get("botToken")).login().block();
         new TicketButtonManager(client);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             client.logout().block();

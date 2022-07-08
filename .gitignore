@@ -1,4 +1,5 @@
 *.txt
+config.yml
 
 .gradle
 build/

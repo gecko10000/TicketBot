@@ -30,8 +30,10 @@ targetCompatibility=17
 
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
     implementation "com.discord4j:discord4j-core:3.2.2"
+    implementation "me.carleslc.Simple-YAML:Simple-Yaml:1.8"
 }

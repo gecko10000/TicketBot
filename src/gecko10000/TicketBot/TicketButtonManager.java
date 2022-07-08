@@ -8,7 +8,10 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.object.entity.channel.MessageChannel;
+import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
+import discord4j.rest.util.Color;
+import org.simpleyaml.configuration.ConfigurationSection;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,7 +36,7 @@ public class TicketButtonManager {
     }
 
     private void deletePreviousMessages(Snowflake newEmbed) {
-        Mono<GuildMessageChannel> channelMono = client.getChannelById(Snowflake.of(Config.getProperty("supportChannel"))).cast(GuildMessageChannel.class);
+        Mono<GuildMessageChannel> channelMono = client.getChannelById(Snowflake.of(Config.<String>get("supportChannel"))).cast(GuildMessageChannel.class);
         Mono<User> selfMono = client.getSelf();
         channelMono.zipWith(selfMono).subscribe(chanUserTuple -> {
             Mono<Long> countMono = getMessagesToDelete(chanUserTuple.getT1(), chanUserTuple.getT2().getId(), newEmbed).count();
@@ -52,14 +55,19 @@ public class TicketButtonManager {
     }
 
     private MessageCreateSpec composeMessage() {
+        ConfigurationSection embedCfg = Config.getConfig().getConfigurationSection("embed");
         return MessageCreateSpec.builder()
-                .content("Make a ticket NOW!")
-                .addComponent(ActionRow.of(Button.danger("1", "Click me!")))
+                .addEmbed(
+                        EmbedCreateSpec.builder()
+                                .color(Color.of(Integer.parseInt(embedCfg.getString("color"), 16)))
+                                .author(embedCfg.getString("title"), null, embedCfg.getString("image"))
+                                .build()
+                ).addComponent(ActionRow.of(Button.danger("1", "Click me!")))
                 .build();
     }
 
     private Mono<Snowflake> sendNewMessage() {
-        Snowflake channelId = Snowflake.of(Config.getProperty("supportChannel"));
+        Snowflake channelId = Snowflake.of(Config.<String>get("supportChannel"));
         return client.getChannelById(channelId)
                 .cast(GuildMessageChannel.class)
                 .flatMap(channel -> channel.createMessage(composeMessage()))

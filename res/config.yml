@@ -1,0 +1,7 @@
+botToken: "abc"
+ticketCategory: "879559524850237481"
+supportChannel: "994395993506320495"
+embed:
+  color: 3051ff
+  title: Open a ticket
+  image: "https://cdn.discordapp.com/attachments/701549229989953576/965362566043938876/Asset_3.png"
