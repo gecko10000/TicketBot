@@ -2,6 +2,7 @@ package gecko10000.TicketBot;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
+import gecko10000.TicketBot.utils.Config;
 import reactor.core.publisher.Mono;
 
 public class TicketBot {
@@ -10,11 +11,22 @@ public class TicketBot {
         new TicketBot();
     }
 
+    public final GatewayDiscordClient client;
+    public final TicketManager ticketManager;
+    public final SQLManager sql;
+
     public TicketBot() {
-        new Config();
-        GatewayDiscordClient client = DiscordClient.create(Config.get("botToken")).login().block();
-        new TicketButtonManager(client);
+        Config.loadConfig();
+        client = DiscordClient.create(Config.get("botToken")).login().block();
+
+        new TicketButtonManager(this);
+        new ButtonListener(this);
+        ticketManager = new TicketManager(this);
+        sql = new SQLManager(this);
+
+        sql.syncTickets();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            sql.save();
             client.logout().block();
             System.out.println("Logged out.");
         }));

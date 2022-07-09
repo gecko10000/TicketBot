@@ -36,4 +36,5 @@ repositories {
 dependencies {
     implementation "com.discord4j:discord4j-core:3.2.2"
     implementation "me.carleslc.Simple-YAML:Simple-Yaml:1.8"
+    implementation "org.xerial:sqlite-jdbc:3.36.0.3"
 }

@@ -1,7 +1,19 @@
 botToken: "abc"
 ticketCategory: "879559524850237481"
 supportChannel: "994395993506320495"
+ticketSupportRole: "995183142547767346"
+ticketManageRole: "995183178216128572"
+ticketCount: 1
 embed:
   color: 3051ff
-  title: Open a ticket
+  title: Support Ticket
+  description: "Do you need help with anything Geode-related? Just want to ask the staff a question? Click the button below to make a ticket!"
   image: "https://cdn.discordapp.com/attachments/701549229989953576/965362566043938876/Asset_3.png"
+  button:
+    text: "Open support ticket"
+    emoji: "🎟️"
+ticketTypes:
+  Software: "This includes Minecraft, Geode code servers, and SQL databases."
+  Panel: "Help with the panel."
+  Billing: "Help with invoices or changing your resource package."
+  Other: "Anything else you might need help with."
