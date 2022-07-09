@@ -1,7 +1,8 @@
-package gecko10000.TicketBot;
+package gecko10000.TicketBot.listeners;
 
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.entity.Guild;
+import gecko10000.TicketBot.TicketBot;
 import reactor.core.publisher.Mono;
 
 public class ButtonListener {
@@ -14,7 +15,7 @@ public class ButtonListener {
             if (!e.getCustomId().equals("ticket")) return Mono.empty();
             Mono<Guild> guildMono = e.getInteraction().getGuild();
             guildMono.subscribe(guild -> bot.ticketManager.openTicket(guild, e.getInteraction().getUser()));
-            return e.reply();
+            return e.deferEdit();
         }).subscribe();
     }
 

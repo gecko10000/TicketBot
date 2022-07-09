@@ -4,6 +4,7 @@ supportChannel: "994395993506320495"
 ticketSupportRole: "995183142547767346"
 ticketManageRole: "995183178216128572"
 ticketCount: 1
+maxConcurrentTickets: 2
 embed:
   color: 3051ff
   title: Support Ticket

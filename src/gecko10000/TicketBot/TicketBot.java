@@ -2,7 +2,10 @@ package gecko10000.TicketBot;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
+import gecko10000.TicketBot.listeners.ButtonListener;
+import gecko10000.TicketBot.listeners.DeleteListener;
 import gecko10000.TicketBot.utils.Config;
+import gecko10000.TicketBot.utils.SQLManager;
 import reactor.core.publisher.Mono;
 
 public class TicketBot {
@@ -21,6 +24,7 @@ public class TicketBot {
 
         new TicketButtonManager(this);
         new ButtonListener(this);
+        new DeleteListener(this);
         ticketManager = new TicketManager(this);
         sql = new SQLManager(this);
 
