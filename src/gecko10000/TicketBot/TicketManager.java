@@ -3,9 +3,7 @@ package gecko10000.TicketBot;
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.PermissionOverwrite;
 import discord4j.core.object.entity.*;
-import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.TextChannel;
-import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.TextChannelCreateSpec;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
@@ -40,23 +38,26 @@ public class TicketManager {
     }
 
     public void openTicket(Guild guild, User user) {
-        // do not open more tickets
+        // do not open more tickets if at max
         if (!canOpenTicket(user)) {
             return;
         }
         int ticketNum = Config.incrementTicketCount();
+        Snowflake supportRole = Config.getSF("ticketSupportRole"), manageRole = Config.getSF("ticketManageRole");
         guild.getEveryoneRole()
                 .map(Role::getId)
-                .map(everyone -> buildChannel(ticketNum, user.getId(), everyone, Config.getSF("ticketSupportRole"), Config.getSF("ticketManageRole")))
+                .map(everyone -> buildChannel(ticketNum, user.getId(), everyone, supportRole, manageRole))
                 .flatMap(guild::createTextChannel)
-                .map(channel -> {
+                .flatMap(channel -> {
                     bot.sql.insertTicket(channel.getId(), user.getId(), ticketNum);
-                    return channel;
+                    return Mono.zip(Mono.just(channel), guild.getRoleById(supportRole), guild.getRoleById(manageRole));
                 })
-                .flatMap(channel -> channel.createMessage("uh"))
+                .flatMap(chanAndRoles -> {
+                    System.out.println("Created ticket " + ticketNum + " for " + user.getUsername() + "#" + user.getDiscriminator() + ".");
+                    bot.sql.syncTickets();
+                    return ghostPing(chanAndRoles.getT1(), user, chanAndRoles.getT2(), chanAndRoles.getT3());
+                })
                 .subscribe();
-        System.out.println("Created ticket " + ticketNum + " for " + user.getUsername() + "#" + user.getDiscriminator() + ".");
-        bot.sql.syncTickets();
     }
 
     public Mono<Void> ghostPing(TextChannel channel, Entity... usersAndRoles) {

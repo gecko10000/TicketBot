@@ -2,7 +2,6 @@ package gecko10000.TicketBot.listeners;
 
 import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
 import gecko10000.TicketBot.TicketBot;
-import gecko10000.TicketBot.utils.Utils;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -16,7 +15,8 @@ public class DeleteListener {
     public DeleteListener(TicketBot bot) {
         this.bot = bot;
         bot.client.on(TextChannelDeleteEvent.class, e -> {
-            bot.sql.syncTickets();
+            Mono.delay(Duration.ofSeconds(1))
+                    .subscribe(t -> bot.sql.syncTickets());
             return Mono.empty();
         }).subscribe();
     }

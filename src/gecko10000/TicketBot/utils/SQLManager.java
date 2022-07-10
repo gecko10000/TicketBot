@@ -2,10 +2,8 @@ package gecko10000.TicketBot.utils;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.Channel;
 import gecko10000.TicketBot.TicketBot;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.sql.Connection;
