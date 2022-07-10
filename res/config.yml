@@ -13,6 +13,11 @@ embed:
   button:
     text: "Open support ticket"
     emoji: "🎟️"
+messages:
+  welcome: "%s has opened a ticket."
+  username:
+    title: Panel Username
+    description: "Are you currently a client at Geode Host? If so, please provide your panel username. Otherwise, reply with `no`."
 ticketTypes:
   Software: "This includes Minecraft, Geode code servers, and SQL databases."
   Panel: "Help with the panel."

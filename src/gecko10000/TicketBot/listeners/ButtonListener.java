@@ -13,8 +13,7 @@ public class ButtonListener {
         this.bot = bot;
         bot.client.on(ButtonInteractionEvent.class, e -> {
             if (!e.getCustomId().equals("ticket")) return Mono.empty();
-            Mono<Guild> guildMono = e.getInteraction().getGuild();
-            guildMono.subscribe(guild -> bot.ticketManager.openTicket(guild, e.getInteraction().getUser()));
+            e.getInteraction().getMember().ifPresent(bot.ticketManager::openTicket);
             return e.deferEdit();
         }).subscribe();
     }
