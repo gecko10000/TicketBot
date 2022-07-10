@@ -17,7 +17,8 @@ messages:
   welcome: "%s has opened a ticket."
   username:
     title: Panel Username
-    description: "Are you currently a client at Geode Host? If so, please provide your panel username. Otherwise, reply with `no`."
+    description: "Are you currently a client at Geode Host? If so, please type your panel username. Otherwise, click the button."
+    buttonEmoji: "❌"
 ticketTypes:
   Software: "This includes Minecraft, Geode code servers, and SQL databases."
   Panel: "Help with the panel."

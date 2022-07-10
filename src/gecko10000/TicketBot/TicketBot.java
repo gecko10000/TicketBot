@@ -21,6 +21,7 @@ public class TicketBot {
     public TicketBot() {
         Config.loadConfig();
         client = DiscordClient.create(Config.get("botToken")).login().block();
+        if (client == null) System.exit(1); // "waaah client might be null" -IntelliJ
 
         new TicketButtonManager(this);
         new ButtonListener(this);

@@ -1,10 +1,14 @@
 package gecko10000.TicketBot;
 
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.PermissionOverwrite;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.*;
 import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import discord4j.core.spec.MessageEditSpec;
@@ -13,7 +17,6 @@ import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import gecko10000.TicketBot.utils.Config;
 import gecko10000.TicketBot.utils.Utils;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -87,12 +90,9 @@ public class TicketManager {
     private Mono<Void> ticketIntroSequence(TextChannel channel, Member member, Entity... toPing) {
         return ghostPing(channel, Stream.concat(Stream.of(member), Stream.of(toPing)).toArray(Entity[]::new))
                 .then(sendFirstMessage(channel, member))
-                .then(askPanelUsername(channel, member))
-                .flatMap(u -> channel.createMessage(MessageCreateSpec.builder()
-                        .addEmbed(EmbedCreateSpec.builder()
-                                .addField("Panel Username", u.equals("no") ? "Not given" : u, true)
-                                .build())
-                        .build()))
+                .flatMap(m -> Mono.zip(Mono.just(m), askPanelUsername(channel, member)))
+                .flatMap(t -> t.getT1().edit(MessageEditSpec.create()
+                        .withEmbeds(addUsername(initialEmbed(member), t.getT2()).build())))
                 .then();
     }
 
@@ -104,14 +104,20 @@ public class TicketManager {
                 .flatMap(Message::delete);
     }
 
-    private Mono<Void> sendFirstMessage(TextChannel channel, Member member) {
+    private EmbedCreateSpec.Builder initialEmbed(Member member) {
+        return EmbedCreateSpec.builder()
+                .description(String.format(Config.<String>get("messages.welcome"), member.getMention()));
+    }
+
+    private EmbedCreateSpec.Builder addUsername(EmbedCreateSpec.Builder b, String username) {
+        return b.addField("Panel Username", username.equals("") ? "No account" : username, true);
+    }
+
+    private Mono<Message> sendFirstMessage(TextChannel channel, Member member) {
         return channel.createMessage(MessageCreateSpec.builder()
-                .addEmbed(EmbedCreateSpec.builder()
-                        //.author(member.getUsername(), null, member.getAvatarUrl())
-                        .description(String.format(Config.<String>get("messages.welcome"), member.getMention()))
+                .addEmbed(initialEmbed(member)
                         .build())
-                .build())
-                .then();
+                .build());
     }
 
     private MessageCreateSpec buildPanelMessage() {
@@ -120,6 +126,7 @@ public class TicketManager {
                         .title(Config.<String>get("messages.username.title"))
                         .description(Config.<String>get("messages.username.description"))
                         .build())
+                .addComponent(ActionRow.of(Button.primary("noUser", ReactionEmoji.unicode(Config.get("messages.username.buttonEmoji")), "No panel account")))
                 .build();
     }
 
@@ -137,7 +144,13 @@ public class TicketManager {
                 .timeout(Duration.ofHours(12))
                 .onErrorResume(TimeoutException.class, e -> Mono.empty())
                 .next();
-        return messageMono.zipWith(tempListener)
+        Mono<String> buttonPressListener = bot.client.on(ButtonInteractionEvent.class)
+                .filter(e -> e.getCustomId().equals("noUser"))
+                .map(e -> "")
+                .timeout(Duration.ofHours(12))
+                .onErrorResume(TimeoutException.class, e -> Mono.empty())
+                .next();
+        return messageMono.zipWith(tempListener.or(buttonPressListener))
                 .flatMap(t -> t.getT1().delete().thenReturn(t.getT2())); // delete message once response is sent
     }
 
