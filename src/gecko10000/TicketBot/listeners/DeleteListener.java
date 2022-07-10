@@ -15,7 +15,9 @@ public class DeleteListener {
     public DeleteListener(TicketBot bot) {
         this.bot = bot;
         bot.client.on(TextChannelDeleteEvent.class, e -> {
-            Mono.delay(Duration.ofSeconds(1))
+            // if tickets are synced without a delay, the ticket
+            // seems to still exist?
+            Mono.delay(Duration.ofSeconds(5))
                     .subscribe(t -> bot.sql.syncTickets());
             return Mono.empty();
         }).subscribe();

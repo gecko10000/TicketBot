@@ -9,6 +9,7 @@ import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import gecko10000.TicketBot.utils.Config;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuples;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -45,17 +46,17 @@ public class TicketManager {
         int ticketNum = Config.incrementTicketCount();
         Snowflake supportRole = Config.getSF("ticketSupportRole"), manageRole = Config.getSF("ticketManageRole");
         guild.getEveryoneRole()
-                .map(Role::getId)
-                .map(everyone -> buildChannel(ticketNum, user.getId(), everyone, supportRole, manageRole))
-                .flatMap(guild::createTextChannel)
-                .flatMap(channel -> {
-                    bot.sql.insertTicket(channel.getId(), user.getId(), ticketNum);
-                    return Mono.zip(Mono.just(channel), guild.getRoleById(supportRole), guild.getRoleById(manageRole));
+                // use tuple to carry role to ghostPing
+                .map(everyone -> Tuples.of(buildChannel(ticketNum, user.getId(), everyone.getId(), supportRole, manageRole), everyone))
+                .flatMap(t -> Mono.zip(guild.createTextChannel(t.getT1()), Mono.just(t.getT2())))
+                .flatMap(t -> {
+                    bot.sql.insertTicket(t.getT1().getId(), user.getId(), ticketNum);
+                    return Mono.zip(Mono.just(t.getT1()), Mono.just(t.getT2()), guild.getRoleById(supportRole), guild.getRoleById(manageRole));
                 })
                 .flatMap(chanAndRoles -> {
                     System.out.println("Created ticket " + ticketNum + " for " + user.getUsername() + "#" + user.getDiscriminator() + ".");
                     bot.sql.syncTickets();
-                    return ghostPing(chanAndRoles.getT1(), user, chanAndRoles.getT2(), chanAndRoles.getT3());
+                    return ghostPing(chanAndRoles.getT1(), user, chanAndRoles.getT2(), chanAndRoles.getT3(), chanAndRoles.getT4());
                 })
                 .subscribe();
     }
