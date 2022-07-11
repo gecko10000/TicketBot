@@ -67,14 +67,11 @@ public class TicketManager {
                         t.getT2(/*everyone role*/),
                         buildChannel(ticketNum, member, t.getT2().getId(), supportRole, manageRole)))
                 .flatMap(t -> t.getT1(/*guild*/).createTextChannel(t.getT3())
-                        .map(c -> Tuples.of(t.getT1(), t.getT2(), c)))
-                .doOnNext(t -> bot.sql.insertTicket(t.getT3(/*channel*/).getId(), member.getId(), ticketNum))
-                .flatMap(t -> t.getT1().getRoleById(supportRole)
-                        .zipWith(t.getT1().getRoleById(manageRole))
-                        .map(roles -> Tuples.of(t.getT3(), t.getT2(), roles.getT1(), roles.getT2())))
+                        .map(c -> Tuples.of(t.getT2(), c)))
+                .doOnNext(t -> bot.sql.insertTicket(t.getT2(/*channel*/).getId(), member.getId(), ticketNum))
                 .doOnNext(t -> System.out.println("Created ticket " + ticketNum + " for " + Utils.userString(member) + "."))
                 .doOnNext(t -> bot.sql.syncTickets())
-                .flatMap(chanAndRoles -> ticketIntroSequence(chanAndRoles.getT1(), member, /*roles*/ chanAndRoles.getT2(), chanAndRoles.getT3(), chanAndRoles.getT4()))
+                .flatMap(chanAndRoles -> ticketIntroSequence(chanAndRoles.getT2(), member, chanAndRoles.getT1(/*everyone role*/)))
                 .subscribe();
     }
 
@@ -139,7 +136,7 @@ public class TicketManager {
         Mono<Message> messageMono = channel.createMessage(buildPanelMessage());
         Mono<String> tempListener = bot.client.on(MessageCreateEvent.class)
                 .filter(e -> e.getMember().isPresent() && e.getMember().get().getId().equals(member.getId())) // correct member
-                .filterWhen(e -> e.getMessage().getChannel().map(c -> c.getId().equals(channel.getId())))
+                .filterWhen(e -> e.getMessage().getChannel().map(c -> c.getId().equals(channel.getId()))) // correct channel
                 .map(e -> Tuples.of(e, e.getMessage().getContent()))
                 .flatMap(t -> t.getT1().getMessage().delete().thenReturn(t.getT2()))
                 .timeout(Duration.ofHours(12))
