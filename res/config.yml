@@ -17,7 +17,7 @@ messages:
   welcome: "%s has opened a ticket."
   username:
     title: Panel Username
-    description: "Please enter your panel username.\nIf you are not currently registered, click the button."
+    description: "Please enter your panel username.\nIf you are not currently registered, click the button instead."
     buttonEmoji: "❌"
     default: "N/A"
   topic:
