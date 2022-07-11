@@ -5,6 +5,7 @@ import org.simpleyaml.configuration.file.YamlFile;
 import org.simpleyaml.utils.SupplierIO;
 
 import java.io.*;
+import java.util.List;
 
 public class Config {
 
@@ -29,6 +30,10 @@ public class Config {
         config.set("ticketCount", prev + 1);
         saveConfig();
         return prev;
+    }
+
+    public static List<String> ticketTypes() {
+        return config.getConfigurationSection("ticketTypes").getKeys(false).stream().toList();
     }
 
     public static void loadConfig() {

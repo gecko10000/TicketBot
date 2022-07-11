@@ -2,27 +2,27 @@ package gecko10000.TicketBot;
 
 import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
+import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.PermissionOverwrite;
+import discord4j.core.object.component.ActionComponent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.*;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.reaction.ReactionEmoji;
-import discord4j.core.spec.EmbedCreateSpec;
-import discord4j.core.spec.MessageCreateSpec;
-import discord4j.core.spec.MessageEditSpec;
-import discord4j.core.spec.TextChannelCreateSpec;
+import discord4j.core.spec.*;
 import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import gecko10000.TicketBot.utils.Config;
 import gecko10000.TicketBot.utils.Utils;
+import org.simpleyaml.configuration.ConfigurationSection;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -90,9 +90,17 @@ public class TicketManager {
     private Mono<Void> ticketIntroSequence(TextChannel channel, Member member, Entity... toPing) {
         return ghostPing(channel, Stream.concat(Stream.of(member), Stream.of(toPing)).toArray(Entity[]::new))
                 .then(sendFirstMessage(channel, member))
-                .flatMap(m -> Mono.zip(Mono.just(m), askPanelUsername(channel, member)))
+                // need the message to edit later
+                .flatMap(m -> askPanelUsername(channel, member)
+                        .map(s -> Tuples.of(m, s)))
+                .flatMap(t -> t.getT1()
+                        .edit(MessageEditSpec.create().withEmbeds(addUsername(initialEmbed(member), t.getT2()).build()))
+                        .then(askTicketTopic(channel, member))
+                        .map(topic -> Tuples.of(t.getT1(), t.getT2(), topic)))
                 .flatMap(t -> t.getT1().edit(MessageEditSpec.create()
-                        .withEmbeds(addUsername(initialEmbed(member), t.getT2()).build())))
+                        .withEmbeds(addTicketType(addUsername(initialEmbed(member), t.getT2()), t.getT3()).build()))
+                        .thenReturn(t.getT3()))
+                .flatMap(topic -> channel.edit().withName(topic + "-" + bot.sql.getTicketNumber(channel.getId())))
                 .then();
     }
 
@@ -113,6 +121,10 @@ public class TicketManager {
         return b.addField("Panel Username", username.equals("") ? "No account" : username, true);
     }
 
+    private EmbedCreateSpec.Builder addTicketType(EmbedCreateSpec.Builder b, String type) {
+        return b.addField("Ticket Type", Utils.titleCase(type) + " Support", true);
+    }
+
     private Mono<Message> sendFirstMessage(TextChannel channel, Member member) {
         return channel.createMessage(MessageCreateSpec.builder()
                 .addEmbed(initialEmbed(member)
@@ -120,13 +132,15 @@ public class TicketManager {
                 .build());
     }
 
+    private static final String NO_ACCOUNT = "ticket-no-user";
+
     private MessageCreateSpec buildPanelMessage() {
         return MessageCreateSpec.builder()
                 .addEmbed(EmbedCreateSpec.builder()
                         .title(Config.<String>get("messages.username.title"))
                         .description(Config.<String>get("messages.username.description"))
                         .build())
-                .addComponent(ActionRow.of(Button.primary("noUser", ReactionEmoji.unicode(Config.get("messages.username.buttonEmoji")), "No panel account")))
+                .addComponent(ActionRow.of(Button.primary(NO_ACCOUNT, ReactionEmoji.unicode(Config.get("messages.username.buttonEmoji")), "No panel account")))
                 .build();
     }
 
@@ -142,16 +156,67 @@ public class TicketManager {
                     return e.getMessage().delete().thenReturn(content);
                 })
                 .timeout(Duration.ofHours(12))
-                .onErrorResume(TimeoutException.class, e -> Mono.empty())
+                .onErrorResume(TimeoutException.class, e -> Mono.just(""))
                 .next();
         Mono<String> buttonPressListener = bot.client.on(ButtonInteractionEvent.class)
-                .filter(e -> e.getCustomId().equals("noUser"))
-                .map(e -> "")
+                .filter(e -> e.getCustomId().equals(NO_ACCOUNT))
+                .filter(e -> {
+                    Optional<Member> m = e.getInteraction().getMember();
+                    return m.isPresent() && m.get().getId().equals(member.getId());
+                })
+                .next()
                 .timeout(Duration.ofHours(12))
                 .onErrorResume(TimeoutException.class, e -> Mono.empty())
-                .next();
+                .flatMap(ComponentInteractionEvent::deferEdit)
+                .then(Mono.just(""));
         return messageMono.zipWith(tempListener.or(buttonPressListener))
                 .flatMap(t -> t.getT1().delete().thenReturn(t.getT2())); // delete message once response is sent
+    }
+
+    private EmbedCreateFields.Field ticketTypeToField(String type) {
+        return EmbedCreateFields.Field.of(Utils.titleCase(type), Config.get("ticketTypes." + type + ".description"), true);
+    }
+
+    private Button typeToButton(String s) {
+        return Button.primary("ticket-type-" + s, ReactionEmoji.unicode(Config.get("ticketTypes." + s + ".emoji")), Utils.titleCase(s));
+    }
+
+    private String idToTicketType(String id) {
+        final String prefix = "ticket-type-";
+        return id.startsWith(prefix) ? id.substring(prefix.length()) : null;
+    }
+
+    private MessageCreateSpec buildTicketMessage() {
+        EmbedCreateSpec.Builder embedSpec = EmbedCreateSpec.builder()
+                .title(Config.<String>get("messages.topic.title"))
+                .description(Config.<String>get("messages.topic.description"));
+        Set<String> types = Config.getConfig().getConfigurationSection("ticketTypes").getKeys(false);
+        for (String key : types) {
+            embedSpec.addField(ticketTypeToField(key));
+        }
+        MessageCreateSpec.Builder msgSpec = MessageCreateSpec.builder()
+                .addEmbed(embedSpec.build());
+        List<ActionComponent> buttons = new ArrayList<>(types.size());
+        for (String key : types) {
+            buttons.add(typeToButton(key));
+        }
+        return msgSpec.addComponent(ActionRow.of(buttons)).build();
+    }
+
+    private Mono<String> askTicketTopic(TextChannel channel, Member member) {
+        Mono<Message> messageMono = channel.createMessage(buildTicketMessage());
+        Mono<String> getTicketTopic = bot.client.on(ButtonInteractionEvent.class)
+                .filter(e -> {
+                    Optional<Member> m = e.getInteraction().getMember();
+                    return m.isPresent() && m.get().getId().equals(member.getId());
+                })
+                .map(ButtonInteractionEvent::getCustomId)
+                .map(this::idToTicketType)
+                .timeout(Duration.ofHours(12))
+                .onErrorResume(TimeoutException.class, e -> Mono.just(Config.ticketTypes().get(0)))
+                .next();
+        return messageMono.zipWith(getTicketTopic)
+                .flatMap(t -> t.getT1().delete().thenReturn(t.getT2()));
     }
 
 }

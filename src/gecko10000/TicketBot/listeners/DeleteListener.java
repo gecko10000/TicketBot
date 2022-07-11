@@ -19,7 +19,7 @@ public class DeleteListener {
             // seems to still exist? this should pretty much cover
             // any request delays, it's not a super important action
             // anyway
-            Mono.delay(Duration.ofSeconds(5))
+            Mono.delay(Duration.ofSeconds(1))
                     .subscribe(t -> bot.sql.syncTickets());
             return Mono.empty();
         }).subscribe();

@@ -1,6 +1,7 @@
 package gecko10000.TicketBot;
 
 import discord4j.common.util.Snowflake;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Message;
@@ -20,6 +21,8 @@ import java.util.Optional;
 
 public class TicketButtonManager {
 
+    private static final String MAKE_TICKET = "ticket-create";
+
     private final TicketBot bot;
 
     public TicketButtonManager(TicketBot bot) {
@@ -27,6 +30,11 @@ public class TicketButtonManager {
         sendNewMessage()
                 .doOnNext(this::deletePreviousMessages)
                 .subscribe();
+        bot.client.on(ButtonInteractionEvent.class, e -> {
+            if (!e.getCustomId().equals(MAKE_TICKET)) return Mono.empty();
+            e.getInteraction().getMember().ifPresent(bot.ticketManager::openTicket);
+            return e.deferEdit();
+        }).subscribe();
     }
 
     private Flux<Snowflake> getMessagesToDelete(MessageChannel channel, Snowflake id, Snowflake newEmbed) {
@@ -48,7 +56,8 @@ public class TicketButtonManager {
                 if (count == 1) {
                     return deleteFlux
                             .flatMap(s -> bot.client.getMessageById(chanUserTuple.getT1().getId(), s))
-                            .flatMap(Message::delete).next();
+                            .flatMap(Message::delete)
+                            .next();
                 } else {
                     return chanUserTuple.getT1().bulkDelete(deleteFlux).next();
                 }
@@ -66,7 +75,7 @@ public class TicketButtonManager {
                         .description(embedCfg.getString("description"))
                         .build())
                 .addComponent(ActionRow.of(Button.primary(
-                        "ticket", ReactionEmoji.unicode(embedCfg.getString("button.emoji")), embedCfg.getString("button.text"))))
+                        MAKE_TICKET, ReactionEmoji.unicode(embedCfg.getString("button.emoji")), embedCfg.getString("button.text"))))
                 .build();
     }
 

@@ -19,8 +19,16 @@ messages:
     title: Panel Username
     description: "Are you currently a client at Geode Host? If so, please type your panel username. Otherwise, click the button."
     buttonEmoji: "❌"
+  topic:
+    title: Ticket Topic
+    description: "Click one of the options below to select the ticket topic."
 ticketTypes:
-  Software: "This includes Minecraft, Geode code servers, and SQL databases."
-  Panel: "Help with the panel."
-  Billing: "Help with invoices or changing your resource package."
-  Other: "Anything else you might need help with."
+  technical:
+    description: "Questions regarding Minecraft, Geode code servers, SQL databases, or other services provided by Geode Host."
+    emoji: "🔧"
+  billing:
+    description: "Help with payments, orders, invoices, cancellation, or changing your resource package."
+    emoji: "💸"
+  other:
+    description: "Anything else you might need help with, such as partnership, sponsorship, or reporting something."
+    emoji: "💬"

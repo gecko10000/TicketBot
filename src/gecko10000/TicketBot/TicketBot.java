@@ -2,7 +2,6 @@ package gecko10000.TicketBot;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
-import gecko10000.TicketBot.listeners.ButtonListener;
 import gecko10000.TicketBot.listeners.DeleteListener;
 import gecko10000.TicketBot.utils.Config;
 import gecko10000.TicketBot.utils.SQLManager;
@@ -24,7 +23,6 @@ public class TicketBot {
         if (client == null) System.exit(1); // "waaah client might be null" -IntelliJ
 
         new TicketButtonManager(this);
-        new ButtonListener(this);
         new DeleteListener(this);
         ticketManager = new TicketManager(this);
         sql = new SQLManager(this);
