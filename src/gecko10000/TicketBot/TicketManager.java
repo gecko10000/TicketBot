@@ -85,11 +85,11 @@ public class TicketManager {
                 .flatMap(m -> askPanelUsername(channel, member)
                         .map(s -> Tuples.of(m, s)))
                 .flatMap(t -> t.getT1()
-                        .edit(MessageEditSpec.create().withEmbeds(addUsername(initialEmbed(member), t.getT2()).build()))
+                        .edit(MessageEditSpec.create().withEmbeds(addUsername(member, t.getT2()).build()))
                         .then(askTicketTopic(channel, member))
                         .map(topic -> Tuples.of(t.getT1(), t.getT2(), topic)))
                 .flatMap(t -> t.getT1().edit(MessageEditSpec.create()
-                        .withEmbeds(addTicketType(addUsername(initialEmbed(member), t.getT2()), t.getT3()).build()))
+                        .withEmbeds(addTicketType(member, t.getT2(), t.getT3()).build()))
                         .thenReturn(t.getT3()))
                 .flatMap(topic -> channel.edit().withName(topic + "-" + bot.sql.getTicketNumber(channel.getId())))
                 .then();
@@ -108,12 +108,12 @@ public class TicketManager {
                 .description(String.format(Config.<String>get("messages.welcome"), member.getMention()));
     }
 
-    private EmbedCreateSpec.Builder addUsername(EmbedCreateSpec.Builder b, String username) {
-        return b.addField("Panel Username", username.equals("") ? Config.get("messages.username.default") : username, true);
+    private EmbedCreateSpec.Builder addUsername(Member member, String username) {
+        return initialEmbed(member).addField("Panel Username", username.equals("") ? Config.get("messages.username.default") : username, true);
     }
 
-    private EmbedCreateSpec.Builder addTicketType(EmbedCreateSpec.Builder b, String type) {
-        return b.addField("Ticket Type", Utils.titleCase(type) + " Support", true);
+    private EmbedCreateSpec.Builder addTicketType(Member member, String username, String type) {
+        return addUsername(member, username).addField("Ticket Type", Utils.titleCase(type) + " Support", true);
     }
 
     private Mono<Message> sendFirstMessage(TextChannel channel, Member member) {
