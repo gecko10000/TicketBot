@@ -10,19 +10,10 @@ import java.time.Duration;
 
 public class DeleteListener {
 
-    private final TicketBot bot;
-
     public DeleteListener(TicketBot bot) {
-        this.bot = bot;
-        bot.client.on(TextChannelDeleteEvent.class, e -> {
-            // if tickets are synced without a delay, the ticket
-            // seems to still exist? this should pretty much cover
-            // any request delays, it's not a super important action
-            // anyway
-            Mono.delay(Duration.ofSeconds(1))
-                    .subscribe(t -> bot.sql.syncTickets());
-            return Mono.empty();
-        }).subscribe();
+        bot.client.on(TextChannelDeleteEvent.class)
+                .doOnNext(e -> Mono.fromRunnable(bot.sql::syncTickets))
+                .subscribe();
     }
 
 }
