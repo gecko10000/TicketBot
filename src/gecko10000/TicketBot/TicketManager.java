@@ -60,30 +60,21 @@ public class TicketManager {
         Snowflake supportRole = Config.getSF("ticketSupportRole"), manageRole = Config.getSF("ticketManageRole");
         member.getGuild()
                 // use tuple/Mono zip to carry role to ghostPing and guild to createTextChannel
-                .flatMap(g -> Mono.zip(
-                        g.getEveryoneRole(),
-                        Mono.just(g)))
+                .flatMap(g -> g.getEveryoneRole()
+                        .map(r -> Tuples.of(g, r)))
                 .map(t -> Tuples.of(
-                        buildChannel(ticketNum, member.getId(), t.getT1().getId(), supportRole, manageRole),
-                        t.getT1(/*everyone role*/),
-                        t.getT2(/*guild*/)))
-                .flatMap(t -> Mono.zip(
-                        t.getT3(/*guild*/).createTextChannel(t.getT1(/*spec*/)),
-                        Mono.just(t.getT2(/*everyone role*/)),
-                        Mono.just(t.getT3(/*guild*/))))
-                .flatMap(t -> {
-                    bot.sql.insertTicket(t.getT1(/*channel*/).getId(), member.getId(), ticketNum);
-                    return Mono.zip(
-                            Mono.just(t.getT1(/*channel*/)),
-                            Mono.just(t.getT2(/*everyone role*/)),
-                            t.getT3(/*guild*/).getRoleById(supportRole),
-                            t.getT3(/*guild*/).getRoleById(manageRole));
-                })
-                .flatMap(chanAndRoles -> {
-                    System.out.println("Created ticket " + ticketNum + " for " + Utils.userString(member) + ".");
-                    bot.sql.syncTickets();
-                    return ticketIntroSequence(chanAndRoles.getT1(), member, /*roles*/ chanAndRoles.getT2(), chanAndRoles.getT3(), chanAndRoles.getT4());
-                })
+                        t.getT1(/*guild*/),
+                        t.getT2(/*everyone role*/),
+                        buildChannel(ticketNum, member.getId(), t.getT2().getId(), supportRole, manageRole)))
+                .flatMap(t -> t.getT1(/*guild*/).createTextChannel(t.getT3())
+                        .map(c -> Tuples.of(t.getT1(), t.getT2(), c)))
+                .doOnNext(t -> bot.sql.insertTicket(t.getT3(/*channel*/).getId(), member.getId(), ticketNum))
+                .flatMap(t -> t.getT1().getRoleById(supportRole)
+                        .zipWith(t.getT1().getRoleById(manageRole))
+                        .map(roles -> Tuples.of(t.getT3(), t.getT2(), roles.getT1(), roles.getT2())))
+                .doOnNext(t -> System.out.println("Created ticket " + ticketNum + " for " + Utils.userString(member) + "."))
+                .doOnNext(t -> bot.sql.syncTickets())
+                .flatMap(chanAndRoles -> ticketIntroSequence(chanAndRoles.getT1(), member, /*roles*/ chanAndRoles.getT2(), chanAndRoles.getT3(), chanAndRoles.getT4()))
                 .subscribe();
     }
 
