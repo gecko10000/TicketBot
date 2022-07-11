@@ -53,6 +53,7 @@ public class TicketManager {
 
     public void openTicket(Member member) {
         // do not open more tickets if at max
+        bot.sql.syncTickets();
         if (!canOpenTicket(member)) {
             return;
         }
@@ -70,7 +71,6 @@ public class TicketManager {
                         .map(c -> Tuples.of(t.getT2(), c)))
                 .doOnNext(t -> bot.sql.insertTicket(t.getT2(/*channel*/).getId(), member.getId(), ticketNum))
                 .doOnNext(t -> System.out.println("Created ticket " + ticketNum + " for " + Utils.userString(member) + "."))
-                .doOnNext(t -> bot.sql.syncTickets())
                 .flatMap(chanAndRoles -> ticketIntroSequence(chanAndRoles.getT2(), member, chanAndRoles.getT1(/*everyone role*/)))
                 .subscribe();
     }

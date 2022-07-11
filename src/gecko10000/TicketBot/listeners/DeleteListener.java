@@ -12,8 +12,8 @@ public class DeleteListener {
 
     public DeleteListener(TicketBot bot) {
         bot.client.on(TextChannelDeleteEvent.class)
-                .delaySequence(Duration.ofSeconds(1))
-                .doOnNext(e -> Mono.fromRunnable(bot.sql::syncTickets))
+                .delaySequence(Duration.ofSeconds(2))
+                .doOnNext(e -> bot.sql.syncTickets())
                 .subscribe();
     }
 
