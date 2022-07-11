@@ -139,9 +139,7 @@ public class TicketManager {
         Mono<Message> messageMono = channel.createMessage(buildPanelMessage());
         Mono<String> tempListener = bot.client.on(MessageCreateEvent.class)
                 .filter(e -> e.getMember().isPresent() && e.getMember().get().getId().equals(member.getId())) // correct member
-                .flatMap(e -> Mono.zip(e.getMessage().getChannel(), Mono.just(e)))
-                .filter(channelAndEvent -> channel.getId().equals(channelAndEvent.getT1().getId())) // correct member
-                .map(Tuple2::getT2)
+                .filterWhen(e -> e.getMessage().getChannel().map(c -> c.getId().equals(channel.getId())))
                 .map(e -> Tuples.of(e, e.getMessage().getContent()))
                 .flatMap(t -> t.getT1().getMessage().delete().thenReturn(t.getT2()))
                 .timeout(Duration.ofHours(12))
@@ -153,6 +151,7 @@ public class TicketManager {
                     Optional<Member> m = e.getInteraction().getMember();
                     return m.isPresent() && m.get().getId().equals(member.getId());
                 })
+                .filterWhen(e -> e.getInteraction().getChannel().map(c -> c.getId().equals(channel.getId())))
                 .next()
                 .timeout(Duration.ofHours(12))
                 .onErrorResume(TimeoutException.class, e -> Mono.empty())
@@ -199,6 +198,7 @@ public class TicketManager {
                     Optional<Member> m = e.getInteraction().getMember();
                     return m.isPresent() && m.get().getId().equals(member.getId());
                 })
+                .filterWhen(e -> e.getInteraction().getChannel().map(c -> c.getId().equals(channel.getId())))
                 .map(ButtonInteractionEvent::getCustomId)
                 .map(this::idToTicketType)
                 .timeout(Duration.ofHours(12))
