@@ -47,19 +47,18 @@ public class TicketManager {
                 .build();
     }
 
-    private boolean canOpenTicket(User user) {
-        return bot.sql.countTickets(user) < Config.<Integer>get("maxConcurrentTickets");
+    // also syncs DB
+    private Mono<Boolean> canOpenTicket(User user) {
+        return bot.sql.syncTickets()
+                .then(Mono.just(bot.sql.countTickets(user) < Config.<Integer>get("maxConcurrentTickets")));
     }
 
     public void openTicket(Member member) {
         // do not open more tickets if at max
-        bot.sql.syncTickets();
-        if (!canOpenTicket(member)) {
-            return;
-        }
         int ticketNum = Config.incrementTicketCount();
         Snowflake supportRole = Config.getSF("ticketSupportRole"), manageRole = Config.getSF("ticketManageRole");
         member.getGuild()
+                .filterWhen(g -> canOpenTicket(member))
                 // use tuple/Mono zip to carry role to ghostPing and guild to createTextChannel
                 .flatMap(g -> g.getEveryoneRole()
                         .map(r -> Tuples.of(g, r)))

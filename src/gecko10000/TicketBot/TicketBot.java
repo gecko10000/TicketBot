@@ -22,12 +22,12 @@ public class TicketBot {
         client = DiscordClient.create(Config.get("botToken")).login().block();
         if (client == null) System.exit(1); // "waaah client might be null" -IntelliJ
 
-        new TicketButtonManager(this);
-        new DeleteListener(this);
         ticketManager = new TicketManager(this);
         sql = new SQLManager(this);
+        new TicketButtonManager(this);
+        new DeleteListener(this);
 
-        sql.syncTickets();
+        sql.syncTickets().subscribe();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             sql.save();
             client.logout().block();

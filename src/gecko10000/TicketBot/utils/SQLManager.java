@@ -4,6 +4,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.User;
 import gecko10000.TicketBot.TicketBot;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.sql.Connection;
@@ -38,9 +39,9 @@ public class SQLManager {
 
     // Removes tickets from the database
     // if the corresponding channels no longer exist.
-    public void syncTickets() {
+    public Mono<Void> syncTickets() {
         Snowflake support = Config.getSF("supportChannel");
-        Flux.fromIterable(sql.<String>queryResultList("SELECT channel FROM tickets;"))
+        return Flux.fromIterable(sql.<String>queryResultList("SELECT channel FROM tickets;"))
                 .map(Snowflake::of)
                 .flatMap(s -> bot.client.getChannelById(s)
                         .onErrorResume(t -> {
@@ -51,7 +52,8 @@ public class SQLManager {
                 .count()
                 .filter(c -> c != 0)
                 .map(c -> c + " ticket" + Utils.smartS(c) + " deleted from database.")
-                .subscribe(System.out::println);
+                .doOnNext(System.out::println)
+                .then();
     }
 
     public int countTickets(User user) {
