@@ -17,11 +17,12 @@ messages:
   welcome: "%s has opened a ticket."
   username:
     title: Panel Username
-    description: "Are you currently a client at Geode Host? If so, please type your panel username. Otherwise, click the button."
+    description: "Please enter your panel username.\nIf you are not currently registered, click the button."
     buttonEmoji: "❌"
+    default: "N/A"
   topic:
     title: Ticket Topic
-    description: "Click one of the options below to select the ticket topic."
+    description: "Click one of the options below to select the support topic."
 ticketTypes:
   technical:
     description: "Questions regarding Minecraft, Geode code servers, SQL databases, or other services provided by Geode Host."

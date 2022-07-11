@@ -35,14 +35,14 @@ public class TicketManager {
         this.bot = bot;
     }
 
-    private TextChannelCreateSpec buildChannel(int ticketNum, Snowflake user, Snowflake everyone, Snowflake ticketSupport, Snowflake ticketManage) {
+    private TextChannelCreateSpec buildChannel(int ticketNum, Member member, Snowflake everyone, Snowflake ticketSupport, Snowflake ticketManage) {
         return TextChannelCreateSpec.builder()
-                .name("ticket-" + ticketNum)
+                .name(member.getUsername() + "-" + ticketNum)
                 .addPermissionOverwrite(PermissionOverwrite.forRole(everyone, PermissionSet.none(), PermissionSet.of(Permission.VIEW_CHANNEL)))
                 .addPermissionOverwrite(PermissionOverwrite.forMember(bot.client.getSelfId(), PermissionSet.of(Permission.VIEW_CHANNEL), PermissionSet.none()))
                 .addPermissionOverwrite(PermissionOverwrite.forRole(ticketSupport, PermissionSet.of(Permission.VIEW_CHANNEL), PermissionSet.none()))
                 .addPermissionOverwrite(PermissionOverwrite.forRole(ticketManage, PermissionSet.of(Permission.VIEW_CHANNEL), PermissionSet.none()))
-                .addPermissionOverwrite(PermissionOverwrite.forMember(user, PermissionSet.of(Permission.VIEW_CHANNEL), PermissionSet.none()))
+                .addPermissionOverwrite(PermissionOverwrite.forMember(member.getId(), PermissionSet.of(Permission.VIEW_CHANNEL), PermissionSet.none()))
                 .parentId(Config.getSF("ticketCategory"))
                 .build();
     }
@@ -65,7 +65,7 @@ public class TicketManager {
                 .map(t -> Tuples.of(
                         t.getT1(/*guild*/),
                         t.getT2(/*everyone role*/),
-                        buildChannel(ticketNum, member.getId(), t.getT2().getId(), supportRole, manageRole)))
+                        buildChannel(ticketNum, member, t.getT2().getId(), supportRole, manageRole)))
                 .flatMap(t -> t.getT1(/*guild*/).createTextChannel(t.getT3())
                         .map(c -> Tuples.of(t.getT1(), t.getT2(), c)))
                 .doOnNext(t -> bot.sql.insertTicket(t.getT3(/*channel*/).getId(), member.getId(), ticketNum))
@@ -98,8 +98,8 @@ public class TicketManager {
     private Mono<Void> ghostPing(TextChannel channel, Entity... usersAndRoles) {
         return channel
                 .createMessage(Arrays.stream(usersAndRoles)
-                    .map(e -> e instanceof User user ? user.getMention() : ((Role) e).getMention())
-                    .collect(Collectors.joining(" ")))
+                        .map(e -> e instanceof User user ? user.getMention() : ((Role) e).getMention())
+                        .collect(Collectors.joining(" ")))
                 .flatMap(Message::delete);
     }
 
@@ -109,7 +109,7 @@ public class TicketManager {
     }
 
     private EmbedCreateSpec.Builder addUsername(EmbedCreateSpec.Builder b, String username) {
-        return b.addField("Panel Username", username.equals("") ? "No account" : username, true);
+        return b.addField("Panel Username", username.equals("") ? Config.get("messages.username.default") : username, true);
     }
 
     private EmbedCreateSpec.Builder addTicketType(EmbedCreateSpec.Builder b, String type) {
@@ -142,10 +142,8 @@ public class TicketManager {
                 .flatMap(e -> Mono.zip(e.getMessage().getChannel(), Mono.just(e)))
                 .filter(channelAndEvent -> channel.getId().equals(channelAndEvent.getT1().getId())) // correct member
                 .map(Tuple2::getT2)
-                .flatMap(e -> {
-                    String content = e.getMessage().getContent();
-                    return e.getMessage().delete().thenReturn(content);
-                })
+                .map(e -> Tuples.of(e, e.getMessage().getContent()))
+                .flatMap(t -> t.getT1().getMessage().delete().thenReturn(t.getT2()))
                 .timeout(Duration.ofHours(12))
                 .onErrorResume(TimeoutException.class, e -> Mono.just(""))
                 .next();
