@@ -9,6 +9,7 @@ import discord4j.core.object.component.ActionComponent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.*;
+import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.spec.*;
@@ -17,6 +18,7 @@ import discord4j.rest.util.PermissionSet;
 import gecko10000.TicketBot.utils.Config;
 import gecko10000.TicketBot.utils.Utils;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.time.Duration;
@@ -51,12 +53,14 @@ public class TicketManager {
                 .then(Mono.just(bot.sql.countTickets(user) < Config.<Integer>get("maxConcurrentTickets")));
     }
 
-    public void openTicket(Member member) {
+    public Mono<TextChannel> openTicket(Member member) {
         // do not open more tickets if at max
-        int ticketNum = Config.incrementTicketCount();
+        int ticketNum = Config.get("ticketCount");
         Snowflake supportRole = Config.getSF("ticketSupportRole"), manageRole = Config.getSF("ticketManageRole");
-        member.getGuild()
+        return bot.sql.syncTickets()
+                .then(member.getGuild())
                 .filterWhen(g -> canOpenTicket(member))
+                .doOnNext(g -> Config.incrementTicketCount())
                 // use tuples to carry role to ghostPing and guild to createTextChannel
                 .flatMap(g -> g.getEveryoneRole()
                         .map(r -> Tuples.of(g, r)))
@@ -65,11 +69,12 @@ public class TicketManager {
                         t.getT2(/*everyone role*/),
                         buildChannel(ticketNum, member, t.getT2().getId(), supportRole, manageRole)))
                 .flatMap(t -> t.getT1(/*guild*/).createTextChannel(t.getT3())
-                        .map(c -> Tuples.of(t.getT2(), c)))
-                .doOnNext(t -> bot.sql.insertTicket(t.getT2(/*channel*/).getId(), member.getId(), ticketNum))
+                        .map(c -> Tuples.of(c, t.getT2(), t.getT1())))
+                .doOnNext(t -> bot.sql.insertTicket(t.getT1(/*channel*/).getId(), member.getId(), ticketNum))
                 .doOnNext(t -> System.out.println("Created ticket " + ticketNum + " for " + Utils.userString(member) + "."))
-                .flatMap(chanAndRoles -> ticketIntroSequence(chanAndRoles.getT2(), member, chanAndRoles.getT1(/*everyone role*/)))
-                .subscribe();
+                .doOnNext(chanAndRoles -> ticketIntroSequence(chanAndRoles.getT1(), member, chanAndRoles.getT2(/*everyone role*/))
+                        .subscribe())
+                .map(Tuple2::getT1);
     }
 
     private Mono<Void> ticketIntroSequence(TextChannel channel, Member member, Entity... toPing) {

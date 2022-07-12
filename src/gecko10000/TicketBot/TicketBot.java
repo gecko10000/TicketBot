@@ -2,6 +2,8 @@ package gecko10000.TicketBot;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
+import gecko10000.TicketBot.commands.CommandRegistry;
+import gecko10000.TicketBot.commands.TicketCreateCommand;
 import gecko10000.TicketBot.listeners.DeleteListener;
 import gecko10000.TicketBot.utils.Config;
 import gecko10000.TicketBot.utils.SQLManager;
@@ -26,6 +28,7 @@ public class TicketBot {
         sql = new SQLManager(this);
         new TicketButtonManager(this);
         new DeleteListener(this);
+        new CommandRegistry(this);
 
         sql.syncTickets().subscribe();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

@@ -33,3 +33,8 @@ ticketTypes:
   other:
     description: "Anything else you might need help with, such as partnership, sponsorship, or reporting something."
     emoji: "💬"
+devMode: true
+commands:
+  create:
+    success: "Your ticket has been created in %s."
+    failure: "You have too many tickets open."

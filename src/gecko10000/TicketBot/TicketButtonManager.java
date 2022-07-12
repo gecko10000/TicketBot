@@ -4,6 +4,7 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
@@ -32,8 +33,11 @@ public class TicketButtonManager {
                 .subscribe();
         bot.client.on(ButtonInteractionEvent.class, e -> {
             if (!e.getCustomId().equals(MAKE_TICKET)) return Mono.empty();
-            e.getInteraction().getMember().ifPresent(bot.ticketManager::openTicket);
-            return e.deferEdit();
+            Optional<Member> m = e.getInteraction().getMember();
+            if (m.isEmpty()) return e.deferEdit();
+            return bot.ticketManager.openTicket(m.get())
+                    .flatMap(c -> e.deferEdit())
+                    .switchIfEmpty(e.reply(Config.<String>get("commands.create.failure")).withEphemeral(true));
         }).subscribe();
     }
 
