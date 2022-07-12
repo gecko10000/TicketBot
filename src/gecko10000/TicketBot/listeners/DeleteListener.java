@@ -2,9 +2,6 @@ package gecko10000.TicketBot.listeners;
 
 import discord4j.core.event.domain.channel.TextChannelDeleteEvent;
 import gecko10000.TicketBot.TicketBot;
-import reactor.core.publisher.Mono;
-
-import java.time.Duration;
 
 // used to sync database upon manual channel deletion
 

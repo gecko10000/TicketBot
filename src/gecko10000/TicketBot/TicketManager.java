@@ -16,9 +16,7 @@ import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import gecko10000.TicketBot.utils.Config;
 import gecko10000.TicketBot.utils.Utils;
-import org.simpleyaml.configuration.ConfigurationSection;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.time.Duration;
@@ -59,7 +57,7 @@ public class TicketManager {
         Snowflake supportRole = Config.getSF("ticketSupportRole"), manageRole = Config.getSF("ticketManageRole");
         member.getGuild()
                 .filterWhen(g -> canOpenTicket(member))
-                // use tuple/Mono zip to carry role to ghostPing and guild to createTextChannel
+                // use tuples to carry role to ghostPing and guild to createTextChannel
                 .flatMap(g -> g.getEveryoneRole()
                         .map(r -> Tuples.of(g, r)))
                 .map(t -> Tuples.of(
