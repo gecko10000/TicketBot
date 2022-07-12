@@ -60,8 +60,12 @@ public class SQLManager {
         return sql.querySingleResult("SELECT COUNT(*) FROM tickets WHERE user=?;", user.getId().asString());
     }
 
-    public int getTicketNumber(Snowflake channel) {
+    public Integer getTicketNumber(Snowflake channel) {
         return sql.querySingleResult("SELECT number FROM tickets WHERE channel=?;", channel.asString());
+    }
+
+    public boolean isTicket(Snowflake channel) {
+        return getTicketNumber(channel) != null;
     }
 
     public void save() {

@@ -38,3 +38,6 @@ commands:
   create:
     success: "Your ticket has been created in %s."
     failure: "You have too many tickets open."
+  rename:
+    success: "Renamed ticket to `#%s`."
+    failure: "This command only works in tickets!"

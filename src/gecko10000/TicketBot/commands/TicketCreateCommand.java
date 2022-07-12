@@ -2,6 +2,7 @@ package gecko10000.TicketBot.commands;
 
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.entity.Member;
+import discord4j.discordjson.json.ImmutableApplicationCommandRequest;
 import gecko10000.TicketBot.TicketBot;
 import gecko10000.TicketBot.utils.Config;
 import reactor.core.publisher.Mono;
@@ -22,6 +23,11 @@ public class TicketCreateCommand extends Command {
     @Override
     String getDescription() {
         return "Creates a ticket";
+    }
+
+    @Override
+    ImmutableApplicationCommandRequest.Builder getCommand() {
+        return super.getCommand().defaultPermission(true);
     }
 
     @Override

@@ -207,4 +207,8 @@ public class TicketManager {
                 .flatMap(t -> t.getT1().delete().thenReturn(t.getT2()));
     }
 
+    public Mono<TextChannel> renameTicket(TextChannel c, String name, int number) {
+        return c.edit().withName(name + "-" + number);
+    }
+
 }
