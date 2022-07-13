@@ -211,4 +211,10 @@ public class TicketManager {
         return c.edit().withName(name + "-" + number);
     }
 
+    public Mono<Void> closeTicket(TextChannel c, Duration delay) {
+        return Mono.delay(delay)
+                .then(c.delete())
+                .then(Mono.fromRunnable(() -> bot.sql.deleteTicket(c.getId())));
+    }
+
 }

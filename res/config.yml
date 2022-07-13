@@ -41,3 +41,5 @@ commands:
   rename:
     success: "Renamed ticket to `#%s`."
     failure: "This command only works in tickets!"
+  close:
+    scheduled: "Ticket scheduled to close in %s."
