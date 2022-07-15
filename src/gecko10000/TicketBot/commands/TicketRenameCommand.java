@@ -48,8 +48,8 @@ public class TicketRenameCommand extends Command {
                 .filter(c -> bot.sql.isTicket(c.getId()))
                 .ofType(TextChannel.class)
                 .flatMap(c -> bot.ticketManager.renameTicket(c, newName, bot.sql.getTicketNumber(c.getId())))
-                .flatMap(c -> e.reply(String.format(Config.<String>get("commands.rename.success"), c.getName())).thenReturn(""))
-                .switchIfEmpty(e.reply(Config.<String>get("commands.rename.failure")).withEphemeral(true).thenReturn(""))
+                .flatMap(c -> e.reply(Config.getAndFormat("commands.rename.success", c.getName().substring(1/*remove "#"*/))).thenReturn(""))
+                .switchIfEmpty(e.reply(Config.getAndFormat("commands.notTicket")).withEphemeral(true).thenReturn(""))
                 .then();
     }
 }

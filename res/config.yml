@@ -35,11 +35,17 @@ ticketTypes:
     emoji: "💬"
 devMode: true
 commands:
+  notTicket: "This command only works in tickets!"
   create:
     success: "Your ticket has been created in %s."
     failure: "You have too many tickets open."
   rename:
     success: "Renamed ticket to `#%s`."
-    failure: "This command only works in tickets!"
   close:
     scheduled: "Ticket scheduled to close in %s."
+  add:
+    success: "Added %s to the ticket."
+  remove:
+    success: "Removed %s from the ticket."
+    already: "%s does not have access to this ticket!"
+    self: "Too late... you can't remove me."

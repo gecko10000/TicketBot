@@ -37,7 +37,7 @@ public class TicketButtonManager {
             if (m.isEmpty()) return e.deferEdit();
             return bot.ticketManager.openTicket(m.get())
                     .flatMap(c -> e.deferEdit().thenReturn(""))
-                    .switchIfEmpty(e.reply(Config.<String>get("commands.create.failure")).withEphemeral(true).thenReturn(""))
+                    .switchIfEmpty(e.reply(Config.getAndFormat("commands.create.failure")).withEphemeral(true).thenReturn(""))
                     .then();
         }).subscribe();
     }

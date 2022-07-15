@@ -35,8 +35,8 @@ public class TicketCreateCommand extends Command {
         Optional<Member> m = e.getInteraction().getMember();
         if (m.isEmpty()) return Mono.empty();
         return bot.ticketManager.openTicket(m.get())
-                .flatMap(c -> e.reply(String.format(Config.<String>get("commands.create.success"), c.getMention())).thenReturn(""))
-                .switchIfEmpty(e.reply(Config.<String>get("commands.create.failure")).withEphemeral(true).thenReturn(""))
+                .flatMap(c -> e.reply(Config.getAndFormat("commands.create.success", c.getMention())).thenReturn(""))
+                .switchIfEmpty(e.reply(Config.getAndFormat("commands.create.failure")).withEphemeral(true).thenReturn(""))
                 .then();
     }
 }

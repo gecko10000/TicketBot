@@ -56,12 +56,17 @@ public class TicketCloseCommand extends Command {
             }
         }
         Duration finalDelay = delay;
-        Mono<TextChannel> channelMono = e.getInteraction().getChannel().ofType(TextChannel.class);
+        Mono<TextChannel> channelMono = e.getInteraction().getChannel().ofType(TextChannel.class)
+                .filter(c -> bot.sql.isTicket(c.getId()));
         if (!delay.isZero()) {
-            channelMono = channelMono.flatMap(c -> e.reply(
-                    String.format(Config.<String>get("commands.close.scheduled"),
+            channelMono = channelMono
+                    .flatMap(c -> e.reply(
+                    Config.getAndFormat("commands.close.scheduled",
                             finalDelay.toString().substring(2).toLowerCase())).thenReturn(c));
         }
-        return channelMono.flatMap(c -> bot.ticketManager.closeTicket( c, finalDelay));
+        return channelMono
+                .flatMap(c -> bot.ticketManager.closeTicket( c, finalDelay).thenReturn(""))
+                .switchIfEmpty(e.reply(Config.getAndFormat("commands.notTicket")).withEphemeral(true).thenReturn(""))
+                .then();
     }
 }

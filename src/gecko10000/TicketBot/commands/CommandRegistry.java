@@ -26,7 +26,9 @@ public class CommandRegistry {
         List.of(
                 new TicketCreateCommand(bot),
                 new TicketRenameCommand(bot),
-                new TicketCloseCommand(bot)
+                new TicketCloseCommand(bot),
+                new TicketAddUserCommand(bot),
+                new TicketRemoveUserCommand(bot)
         ).forEach(c -> commands.put(c.getName(), c));
     }
 

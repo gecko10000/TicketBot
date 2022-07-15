@@ -104,7 +104,7 @@ public class TicketManager {
 
     private EmbedCreateSpec.Builder initialEmbed(Member member) {
         return EmbedCreateSpec.builder()
-                .description(String.format(Config.<String>get("messages.welcome"), member.getMention()));
+                .description(Config.getAndFormat("messages.welcome", member.getMention()));
     }
 
     private EmbedCreateSpec.Builder addUsername(Member member, String username) {
@@ -127,8 +127,8 @@ public class TicketManager {
     private MessageCreateSpec buildPanelMessage() {
         return MessageCreateSpec.builder()
                 .addEmbed(EmbedCreateSpec.builder()
-                        .title(Config.<String>get("messages.username.title"))
-                        .description(Config.<String>get("messages.username.description"))
+                        .title(Config.getAndFormat("messages.username.title"))
+                        .description(Config.getAndFormat("messages.username.description"))
                         .build())
                 .addComponent(ActionRow.of(Button.primary(NO_ACCOUNT, ReactionEmoji.unicode(Config.get("messages.username.buttonEmoji")), "No panel account")))
                 .build();
@@ -175,8 +175,8 @@ public class TicketManager {
 
     private MessageCreateSpec buildTicketMessage() {
         EmbedCreateSpec.Builder embedSpec = EmbedCreateSpec.builder()
-                .title(Config.<String>get("messages.topic.title"))
-                .description(Config.<String>get("messages.topic.description"));
+                .title(Config.getAndFormat("messages.topic.title"))
+                .description(Config.getAndFormat("messages.topic.description"));
         Set<String> types = Config.getConfig().getConfigurationSection("ticketTypes").getKeys(false);
         for (String key : types) {
             embedSpec.addField(ticketTypeToField(key));

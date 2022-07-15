@@ -25,6 +25,10 @@ public class Config {
         return Snowflake.of(config.getString(key));
     }
 
+    public static String getAndFormat(String key, Object... args) {
+        return String.format(config.getString(key), args);
+    }
+
     public static int incrementTicketCount() {
         int prev = config.getInt("ticketCount");
         config.set("ticketCount", prev + 1);
