@@ -42,7 +42,8 @@ commands:
   rename:
     success: "Renamed ticket to `#%s`."
   close:
-    scheduled: "Ticket scheduled to close in %s."
+    scheduled: "Ticket scheduled to close in `%s`. Send a message to cancel."
+    reopened: "Ticket reopened."
   add:
     success: "Added %s to the ticket."
   remove:

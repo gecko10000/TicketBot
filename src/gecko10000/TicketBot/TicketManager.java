@@ -17,6 +17,7 @@ import discord4j.rest.util.Permission;
 import discord4j.rest.util.PermissionSet;
 import gecko10000.TicketBot.utils.Config;
 import gecko10000.TicketBot.utils.Utils;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -211,10 +212,20 @@ public class TicketManager {
         return c.edit().withName(name + "-" + number);
     }
 
-    public Mono<Void> closeTicket(TextChannel c, Duration delay) {
-        return Mono.delay(delay)
-                .then(c.delete())
-                .then(Mono.fromRunnable(() -> bot.sql.deleteTicket(c.getId())));
+    public void closeTicket(TextChannel channel, Duration delay) {
+        Disposable close = Mono.delay(delay)
+                .then(channel.delete())
+                .then(Mono.fromRunnable(() -> bot.sql.deleteTicket(channel.getId())))
+                .subscribe();
+        bot.client.on(MessageCreateEvent.class)
+                .filter(e -> e.getMember().map(m -> !m.isBot()).orElse(false))
+                .flatMap(e -> e.getMessage().getChannel())
+                .filter(c -> c.getId().equals(channel.getId()))
+                .doOnNext(c -> close.dispose())
+                .flatMap(c -> c.createMessage(Config.getAndFormat("commands.close.reopened")))
+                .timeout(Duration.ofHours(12))
+                .onErrorResume(TimeoutException.class, e -> Mono.empty())
+                .next().subscribe();
     }
 
 }

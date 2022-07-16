@@ -66,7 +66,9 @@ public class TicketRemoveUserCommand extends Command {
                                     .withEphemeral(true)
                                     .thenReturn(""));
                 })
-                .switchIfEmpty(e.reply(Config.getAndFormat("commands.remove.self")).withEphemeral(true).thenReturn(""))
+                .switchIfEmpty(e.reply(Config.getAndFormat("commands.remove.self"))
+                        .withEphemeral(true)
+                        .thenReturn(""))
                 .then(); // tried to remove the bot
         // two error messages:
         // user not in ticket

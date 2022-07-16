@@ -65,7 +65,7 @@ public class TicketCloseCommand extends Command {
                             finalDelay.toString().substring(2).toLowerCase())).thenReturn(c));
         }
         return channelMono
-                .flatMap(c -> bot.ticketManager.closeTicket( c, finalDelay).thenReturn(""))
+                .doOnNext(c -> bot.ticketManager.closeTicket(c, finalDelay)).thenReturn("")
                 .switchIfEmpty(e.reply(Config.getAndFormat("commands.notTicket")).withEphemeral(true).thenReturn(""))
                 .then();
     }
