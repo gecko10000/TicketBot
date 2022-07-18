@@ -66,15 +66,9 @@ public class TicketRemoveUserCommand extends Command {
                                     .withEphemeral(true)
                                     .thenReturn(""));
                 })
-                .switchIfEmpty(e.reply(Config.getAndFormat("commands.remove.self"))
+                .switchIfEmpty(e.reply(Config.getAndFormat("commands.remove.self")) // tried to remove the bot
                         .withEphemeral(true)
                         .thenReturn(""))
-                .then(); // tried to remove the bot
-        // two error messages:
-        // user not in ticket
-        // channel not ticket
-        // channel not ticket has priority
-        // ternary would look like this:
-        // isTicket ? "already in ticket" : "not ticket"
+                .then();
     }
 }
