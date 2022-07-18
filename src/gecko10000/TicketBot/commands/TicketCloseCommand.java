@@ -14,6 +14,8 @@ import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.TextChannel;
+import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.MessageCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ImmutableApplicationCommandRequest;
 import discord4j.rest.util.Permission;
@@ -21,6 +23,7 @@ import discord4j.rest.util.PermissionSet;
 import gecko10000.TicketBot.TicketBot;
 import gecko10000.TicketBot.utils.Config;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
@@ -92,15 +95,16 @@ public class TicketCloseCommand extends Command {
                             .ofType(MessageChannel.class)
                             .map(c -> c.getId().equals(channel.getId())))
                 .flatMap(e -> Mono.zip(
-                            e.reply(Config.getAndFormat("commands.close.reopened", e.getInteraction().getUser().getMention()))
-                                    .thenReturn(""),
+                            e.getMessage().map(m -> m.delete().thenReturn("")).orElse(Mono.just("")),
                             channel.getGuild()
                                     .flatMap(Guild::getEveryoneRole)
                                     .map(Role::getId)
                                     .flatMap(s -> channel.addRoleOverwrite(s, PermissionOverwrite.forRole(s,
                                             PermissionSet.of(Permission.SEND_MESSAGES),
                                             PermissionSet.of(Permission.VIEW_CHANNEL))))
-                                    .thenReturn("")))
+                                    .thenReturn(e)).map(Tuple2::getT2))
+                .flatMap(e -> channel.createMessage(reopenMessage(e))
+                        .thenReturn(""))
                 .next().thenReturn("")
                 .timeout(delay)
                 .onErrorResume(TimeoutException.class, e -> bot.ticketManager.closeTicket(channel)
@@ -112,5 +116,13 @@ public class TicketCloseCommand extends Command {
         return e.reply(Config.getAndFormat("commands.close.scheduled",
                         delay.toString().substring(2).toLowerCase()))
                 .withComponents(ActionRow.of(Button.primary(REOPEN, "Re-open ticket")));
+    }
+
+    private MessageCreateSpec reopenMessage(ButtonInteractionEvent e) {
+        return MessageCreateSpec.builder()
+                .addEmbed(EmbedCreateSpec.builder()
+                        .description(Config.getAndFormat("commands.close.reopened", e.getInteraction().getUser().getMention()))
+                        .build())
+                .build();
     }
 }
