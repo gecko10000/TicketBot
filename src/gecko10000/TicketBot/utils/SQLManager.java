@@ -8,6 +8,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.sql.Connection;
+import java.util.stream.Stream;
 
 public class SQLManager {
 
@@ -62,6 +63,11 @@ public class SQLManager {
 
     public Integer getTicketNumber(Snowflake channel) {
         return sql.querySingleResult("SELECT number FROM tickets WHERE channel=?;", channel.asString());
+    }
+
+    public Stream<Snowflake> getUserTickets(Snowflake user) {
+        return sql.<String>queryResultList("SELECT channel FROM tickets WHERE user=?;", user.asString())
+                .stream().map(Snowflake::of);
     }
 
     public boolean isTicket(Snowflake channel) {

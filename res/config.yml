@@ -23,6 +23,7 @@ messages:
   topic:
     title: Ticket Topic
     description: "Click one of the options below to select the support topic."
+  userLeft: "%s, the opener of the ticket, has left the server."
 ticketTypes:
   technical:
     description: "Questions regarding Minecraft, Geode code servers, SQL databases, or other services provided by Geode Host."

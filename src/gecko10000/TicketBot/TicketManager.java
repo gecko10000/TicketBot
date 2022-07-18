@@ -9,7 +9,6 @@ import discord4j.core.object.component.ActionComponent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.*;
-import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.object.reaction.ReactionEmoji;
 import discord4j.core.spec.*;
@@ -141,6 +140,7 @@ public class TicketManager {
                 .filter(e -> e.getMember().isPresent() && e.getMember().get().getId().equals(member.getId())) // correct member
                 .filterWhen(e -> e.getMessage().getChannel().map(c -> c.getId().equals(channel.getId()))) // correct channel
                 .map(e -> Tuples.of(e, e.getMessage().getContent()))
+                .filter(t -> !t.getT2().contains(" ")) // ignore messages with spaces since those can't be a username anyways
                 .flatMap(t -> t.getT1().getMessage().delete().thenReturn(t.getT2()))
                 .timeout(Duration.ofHours(12))
                 .onErrorResume(TimeoutException.class, e -> Mono.just(""))
