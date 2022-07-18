@@ -3,16 +3,21 @@ package gecko10000.TicketBot.commands;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
+import discord4j.core.object.PermissionOverwrite;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.Role;
 import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ImmutableApplicationCommandRequest;
+import discord4j.rest.util.Permission;
+import discord4j.rest.util.PermissionSet;
 import gecko10000.TicketBot.TicketBot;
 import gecko10000.TicketBot.utils.Config;
 import reactor.core.publisher.Mono;
@@ -66,6 +71,13 @@ public class TicketCloseCommand extends Command {
         return e.getInteraction().getChannel().ofType(TextChannel.class)
                 .filter(c -> bot.sql.isTicket(c.getId())) // early return for non-tickets
                 .flatMap(c -> finalDelay.isZero() ? Mono.just(c) : sendScheduleMessage(e, finalDelay).thenReturn(c))
+                .flatMap(c -> c.getGuild()
+                        .flatMap(Guild::getEveryoneRole)
+                        .map(Role::getId)
+                        .flatMap(s -> c.addRoleOverwrite(s, PermissionOverwrite.forRole(s,
+                                PermissionSet.none(),
+                                PermissionSet.of(Permission.SEND_MESSAGES, Permission.VIEW_CHANNEL))))
+                        .thenReturn(c))
                 .flatMap(c -> closeTicket(e, c, finalDelay).thenReturn(""))
                 .switchIfEmpty(e.reply(Config.getAndFormat("commands.notTicket")).withEphemeral(true).thenReturn(""))
                 .then();
@@ -79,10 +91,20 @@ public class TicketCloseCommand extends Command {
                 .filterWhen(e -> e.getMessage().get().getChannel() // correct channel
                             .ofType(MessageChannel.class)
                             .map(c -> c.getId().equals(channel.getId())))
-                .flatMap(e -> e.reply(Config.getAndFormat("commands.close.reopened", e.getInteraction().getUser().getMention())).thenReturn(""))
-                .next()
+                .flatMap(e -> Mono.zip(
+                            e.reply(Config.getAndFormat("commands.close.reopened", e.getInteraction().getUser().getMention()))
+                                    .thenReturn(""),
+                            channel.getGuild()
+                                    .flatMap(Guild::getEveryoneRole)
+                                    .map(Role::getId)
+                                    .flatMap(s -> channel.addRoleOverwrite(s, PermissionOverwrite.forRole(s,
+                                            PermissionSet.of(Permission.SEND_MESSAGES),
+                                            PermissionSet.of(Permission.VIEW_CHANNEL))))
+                                    .thenReturn("")))
+                .next().thenReturn("")
                 .timeout(delay)
-                .onErrorResume(TimeoutException.class, e -> bot.ticketManager.closeTicket(channel).thenReturn(""))
+                .onErrorResume(TimeoutException.class, e -> bot.ticketManager.closeTicket(channel)
+                        .onErrorResume(t -> Mono.empty()).thenReturn(""))
                 .then();
     }
 
