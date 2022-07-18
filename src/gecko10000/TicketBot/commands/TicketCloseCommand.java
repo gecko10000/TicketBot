@@ -65,11 +65,8 @@ public class TicketCloseCommand extends Command {
         Duration finalDelay = delay;
         return e.getInteraction().getChannel().ofType(TextChannel.class)
                 .filter(c -> bot.sql.isTicket(c.getId())) // early return for non-tickets
-                .doOnNext(c -> {
-                    if (!finalDelay.isZero())
-                        sendScheduleMessage(e, finalDelay, c);
-                })
-                .flatMap(c -> closeTicket(e, c, finalDelay)).thenReturn("")
+                .flatMap(c -> finalDelay.isZero() ? Mono.just(c) : sendScheduleMessage(e, finalDelay).thenReturn(c))
+                .flatMap(c -> closeTicket(e, c, finalDelay).thenReturn(""))
                 .switchIfEmpty(e.reply(Config.getAndFormat("commands.notTicket")).withEphemeral(true).thenReturn(""))
                 .then();
     }
@@ -89,10 +86,9 @@ public class TicketCloseCommand extends Command {
                 .then();
     }
 
-    private void sendScheduleMessage(ChatInputInteractionEvent e, Duration delay, TextChannel c) {
-        e.reply(Config.getAndFormat("commands.close.scheduled",
+    private Mono<Void> sendScheduleMessage(ChatInputInteractionEvent e, Duration delay) {
+        return e.reply(Config.getAndFormat("commands.close.scheduled",
                         delay.toString().substring(2).toLowerCase()))
-                .withComponents(ActionRow.of(Button.primary(REOPEN, "Re-open ticket")))
-                .subscribe();
+                .withComponents(ActionRow.of(Button.primary(REOPEN, "Re-open ticket")));
     }
 }
