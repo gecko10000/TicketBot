@@ -1,9 +1,15 @@
 package gecko10000.TicketBot.commands;
 
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ImmutableApplicationCommandRequest;
@@ -14,6 +20,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 public class TicketCloseCommand extends Command {
 
@@ -56,17 +63,36 @@ public class TicketCloseCommand extends Command {
             }
         }
         Duration finalDelay = delay;
-        Mono<TextChannel> channelMono = e.getInteraction().getChannel().ofType(TextChannel.class)
-                .filter(c -> bot.sql.isTicket(c.getId()));
-        if (!delay.isZero()) {
-            channelMono = channelMono
-                    .flatMap(c -> e.reply(
-                    Config.getAndFormat("commands.close.scheduled",
-                            finalDelay.toString().substring(2).toLowerCase())).thenReturn(c));
-        }
-        return channelMono
-                .doOnNext(c -> bot.ticketManager.closeTicket(c, finalDelay)).thenReturn("")
+        return e.getInteraction().getChannel().ofType(TextChannel.class)
+                .filter(c -> bot.sql.isTicket(c.getId())) // early return for non-tickets
+                .doOnNext(c -> {
+                    if (!finalDelay.isZero())
+                        sendScheduleMessage(e, finalDelay, c);
+                })
+                .flatMap(c -> closeTicket(e, c, finalDelay)).thenReturn("")
                 .switchIfEmpty(e.reply(Config.getAndFormat("commands.notTicket")).withEphemeral(true).thenReturn(""))
                 .then();
+    }
+
+    private static final String REOPEN = "ticket-reopen";
+
+    private Mono<Void> closeTicket(ChatInputInteractionEvent event, TextChannel channel, Duration delay) {
+        return bot.client.on(ButtonInteractionEvent.class)
+                .filter(e -> e.getCustomId().equals(REOPEN)) // reopen id
+                .filterWhen(e -> e.getMessage().get().getChannel() // correct channel
+                            .ofType(MessageChannel.class)
+                            .map(c -> c.getId().equals(channel.getId())))
+                .flatMap(e -> e.reply(Config.getAndFormat("commands.close.reopened", e.getInteraction().getUser().getMention())).thenReturn(""))
+                .next()
+                .timeout(delay)
+                .onErrorResume(TimeoutException.class, e -> bot.ticketManager.closeTicket(channel).thenReturn(""))
+                .then();
+    }
+
+    private void sendScheduleMessage(ChatInputInteractionEvent e, Duration delay, TextChannel c) {
+        e.reply(Config.getAndFormat("commands.close.scheduled",
+                        delay.toString().substring(2).toLowerCase()))
+                .withComponents(ActionRow.of(Button.primary(REOPEN, "Re-open ticket")))
+                .subscribe();
     }
 }
