@@ -44,7 +44,7 @@ public class TicketCloseCommand extends Command {
 
     @Override
     Mono<Void> handleCommand(ChatInputInteractionEvent e) {
-        Duration delay = Duration.ZERO;
+        Duration delay = Duration.ofHours(24); // default
         Optional<String> input = e.getOption("delay")
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
