@@ -8,6 +8,7 @@ import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.MessageCreateSpec;
 import gecko10000.TicketBot.TicketBot;
 import gecko10000.TicketBot.utils.Config;
+import gecko10000.TicketBot.utils.Utils;
 
 public class LeaveListener {
 
@@ -26,7 +27,7 @@ public class LeaveListener {
     private MessageCreateSpec createLeaveMessage(Snowflake user) {
         return MessageCreateSpec.builder()
                 .addEmbed(EmbedCreateSpec.builder()
-                        .description(Config.getAndFormat("messages.userLeft", "<@" + user.asString() + ">"))
+                        .description(Config.getAndFormat("messages.userLeft", Utils.userMention(user)))
                         .build())
                 .build();
     }

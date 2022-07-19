@@ -24,7 +24,7 @@ public class TicketRenameCommand extends Command {
 
     @Override
     String getDescription() {
-        return "Renames a ticket";
+        return "Renames a ticket.";
     }
 
     @Override

@@ -30,7 +30,7 @@ public class TicketRemoveUserCommand extends Command {
 
     @Override
     String getDescription() {
-        return "Removes a user from the ticket";
+        return "Removes a user from the ticket.";
     }
 
     @Override

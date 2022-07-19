@@ -22,7 +22,7 @@ public class TicketCreateCommand extends Command {
 
     @Override
     String getDescription() {
-        return "Creates a ticket";
+        return "Creates a ticket.";
     }
 
     @Override

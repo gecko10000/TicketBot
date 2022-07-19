@@ -44,7 +44,7 @@ public class TicketCloseCommand extends Command {
 
     @Override
     String getDescription() {
-        return "Closes a ticket";
+        return "Closes a ticket.";
     }
 
     @Override

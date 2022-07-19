@@ -29,7 +29,8 @@ public class CommandRegistry {
                 new TicketCloseCommand(bot),
                 new TicketAddUserCommand(bot),
                 new TicketRemoveUserCommand(bot),
-                new ForgetUsernameCommand(bot)
+                new ForgetUsernameCommand(bot),
+                new RememberUsernameCommand(bot)
         ).forEach(c -> commands.put(c.getName(), c));
     }
 

@@ -29,7 +29,7 @@ public class TicketAddUserCommand extends Command {
 
     @Override
     String getDescription() {
-        return "Adds a user to the ticket";
+        return "Adds a user to the ticket.";
     }
 
     @Override

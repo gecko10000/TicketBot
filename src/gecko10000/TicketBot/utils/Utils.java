@@ -1,5 +1,6 @@
 package gecko10000.TicketBot.utils;
 
+import discord4j.common.util.Snowflake;
 import discord4j.core.object.entity.User;
 
 import java.util.Arrays;
@@ -21,6 +22,10 @@ public class Utils {
         return Arrays.stream(string.split(" "))
                 .map(s -> Character.toUpperCase(s.charAt(0)) + s.substring(1))
                 .collect(Collectors.joining(" "));
+    }
+
+    public static String userMention(Snowflake id) {
+        return "<@" + id.asString() + ">";
     }
 
 }

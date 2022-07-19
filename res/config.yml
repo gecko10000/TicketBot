@@ -53,3 +53,6 @@ commands:
     self: "Too late... you can't remove me."
   forget:
     success: "Removed panel username `%s` associated with Discord user %s."
+    noUser: "%s does not have an associated panel username."
+  remember:
+    success: "Set %s's panel username to `%s`."

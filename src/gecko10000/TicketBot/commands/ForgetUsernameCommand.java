@@ -7,6 +7,7 @@ import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ImmutableApplicationCommandRequest;
 import gecko10000.TicketBot.TicketBot;
 import gecko10000.TicketBot.utils.Config;
+import gecko10000.TicketBot.utils.Utils;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuples;
 
@@ -34,8 +35,8 @@ public class ForgetUsernameCommand extends Command {
         Snowflake ticketOpener = bot.sql.getTicketOpener(channelId);
         String oldUsername = bot.sql.getUsername(ticketOpener);
         if (oldUsername == null)
-            return e.reply("No user?").withEphemeral(true);
+            return e.reply(Config.getAndFormat("commands.forget.noUser", Utils.userMention(ticketOpener))).withEphemeral(true);
         bot.sql.removeUsername(ticketOpener);
-        return e.reply(Config.getAndFormat("commands.forget.success", oldUsername, "<@" + ticketOpener.asString() + ">")).withEphemeral(true);
+        return e.reply(Config.getAndFormat("commands.forget.success", oldUsername, Utils.userMention(ticketOpener))).withEphemeral(true);
     }
 }

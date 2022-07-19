@@ -86,7 +86,11 @@ public class SQLManager {
     }
 
     public void setUsername(Snowflake id, String username) {
-        sql.execute("INSERT OR IGNORE INTO usernames VALUES (?, ?);", id.asString(), username);
+        if (getUsername(id) == null) {
+            sql.execute("INSERT OR IGNORE INTO usernames VALUES (?, ?);", id.asString(), username);
+        } else {
+            sql.execute("UPDATE usernames SET username=? WHERE snowflake=?;", username, id.asString());
+        }
     }
 
     public void removeUsername(Snowflake id) {
