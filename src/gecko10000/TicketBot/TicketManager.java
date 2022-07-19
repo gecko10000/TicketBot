@@ -82,6 +82,7 @@ public class TicketManager {
                 .then(sendFirstMessage(channel, member))
                 // need the message to edit later
                 .flatMap(m -> askPanelUsername(channel, member)
+                        .doOnNext(s -> bot.sql.setUsername(member.getId(), s))
                         .map(s -> Tuples.of(m, s)))
                 .flatMap(t -> t.getT1()
                         .edit(MessageEditSpec.create().withEmbeds(addUsername(member, t.getT2()).build()))
@@ -135,6 +136,9 @@ public class TicketManager {
     }
 
     private Mono<String> askPanelUsername(TextChannel channel, Member member) {
+        String saved = bot.sql.getUsername(member.getId());
+        if (saved != null)
+            return Mono.just(saved);
         Mono<Message> messageMono = channel.createMessage(buildPanelMessage());
         Mono<String> tempListener = bot.client.on(MessageCreateEvent.class)
                 .filter(e -> e.getMember().isPresent() && e.getMember().get().getId().equals(member.getId())) // correct member

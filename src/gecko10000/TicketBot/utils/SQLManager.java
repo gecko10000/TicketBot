@@ -20,14 +20,17 @@ public class SQLManager {
         this.bot = bot;
         Connection connection = SQLHelper.openSQLite(new File("database.db").toPath());
         this.sql = new SQLHelper(connection);
-        createTable();
+        createTables();
     }
 
-    private void createTable() {
+    private void createTables() {
         sql.execute("CREATE TABLE IF NOT EXISTS tickets (" +
                 "channel TEXT PRIMARY KEY," +
                 "user TEXT," +
                 "number INTEGER);");
+        sql.execute("CREATE TABLE IF NOT EXISTS usernames (" +
+                "snowflake TEXT PRIMARY KEY," +
+                "username TEXT);");
     }
 
     public void insertTicket(Snowflake channel, Snowflake user, int ticketNumber) {
@@ -70,8 +73,24 @@ public class SQLManager {
                 .stream().map(Snowflake::of);
     }
 
+    public Snowflake getTicketOpener(Snowflake ticketId) {
+        return Snowflake.of(sql.<String>querySingleResult("SELECT user FROM tickets WHERE channel=?;", ticketId.asString()));
+    }
+
     public boolean isTicket(Snowflake channel) {
         return getTicketNumber(channel) != null;
+    }
+
+    public String getUsername(Snowflake id) {
+        return sql.querySingleResult("SELECT username FROM usernames WHERE snowflake=?;", id.asString());
+    }
+
+    public void setUsername(Snowflake id, String username) {
+        sql.execute("INSERT OR IGNORE INTO usernames VALUES (?, ?);", id.asString(), username);
+    }
+
+    public void removeUsername(Snowflake id) {
+        sql.execute("DELETE FROM usernames WHERE snowflake=?;", id.asString());
     }
 
     public void save() {

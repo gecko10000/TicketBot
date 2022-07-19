@@ -51,3 +51,5 @@ commands:
     success: "Removed %s from the ticket."
     already: "%s does not have access to this ticket!"
     self: "Too late... you can't remove me."
+  forget:
+    success: "Removed panel username `%s` associated with Discord user %s."
